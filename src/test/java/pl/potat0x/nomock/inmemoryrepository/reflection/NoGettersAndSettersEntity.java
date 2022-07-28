@@ -5,13 +5,16 @@ import javax.persistence.Id;
 import java.util.Objects;
 
 @Entity
-final class NoGettersAndSettersEntity {
+class NoGettersAndSettersEntity {
 
     @Id
     Integer id;
 
     NoGettersAndSettersEntity(Integer id) {
         this.id = id;
+    }
+
+    protected NoGettersAndSettersEntity() {
     }
 
     @Override

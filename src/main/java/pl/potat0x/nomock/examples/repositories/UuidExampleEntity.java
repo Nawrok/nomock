@@ -7,19 +7,18 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-final class UuidExampleEntity {
+class UuidExampleEntity {
 
     @Id
     private UUID id;
-    private String name;
 
-    public UuidExampleEntity(UUID id, String name) {
-        this.id = id;
-        this.name = name;
-    }
+    private String name;
 
     public UuidExampleEntity(String name) {
         this.name = name;
+    }
+
+    protected UuidExampleEntity() {
     }
 
     public UUID getId() {
@@ -35,9 +34,8 @@ final class UuidExampleEntity {
         return name;
     }
 
-    public UuidExampleEntity setName(String name) {
+    public void setName(String name) {
         this.name = name;
-        return this;
     }
 
     @Override

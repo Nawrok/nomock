@@ -1,17 +1,21 @@
 package pl.potat0x.nomock.examples.bookapp;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
+import java.util.stream.Stream;
 
-public class BookServiceTest {
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class BookServiceTest {
 
     BookService bookService = new BookService(new InMemoryBookRepository());
 
     @Test
-    public void inMemoryRepositoryDemo() {
-        List.of(new BookDto("The Godfather"),
+    void inMemoryRepositoryDemo() {
+        Stream.of(
+                new BookDto("The Godfather"),
                 new BookDto("1984"),
                 new BookDto("Clean Code")
         ).forEach(bookService::createBook);
@@ -21,7 +25,7 @@ public class BookServiceTest {
         prettyPrint("All books sorted by name (desc)", bookService.getAllBooks(Sort.by("name").descending()));
 
         prettyPrint("Get book by id=2", bookService.getBookById(2L));
-        bookService.deleteBook(2L);
+        assertTrue(bookService.deleteBook(2L));
         prettyPrint("All books, after deleting book with id=2", bookService.getAllBooks());
         prettyPrint("Get book by id=2", bookService.getBookById(2L));
 
@@ -35,9 +39,9 @@ public class BookServiceTest {
 
     private void prettyPrint(String title, List<?> objects) {
         String prettyList = objects.stream()
-                .map(bookDto -> "\t\t" + bookDto.toString())
+                .map(bookDto -> "\t" + bookDto.toString())
                 .reduce((item1, item2) -> item1 + ",\n" + item2)
-                .map(items -> "\t[\n" + items + "\n\t]")
+                .map(items -> "[\n" + items + "\n]")
                 .orElse("[]");
         System.out.println(title + ":\n" + prettyList);
         System.out.println();

@@ -3,11 +3,9 @@ package pl.potat0x.nomock.inmemoryrepository.reflection
 import pl.potat0x.nomock.examples.bookapp.BookEntity
 import pl.potat0x.nomock.inmemoryrepository.InMemoryRepositoryException
 import spock.lang.Specification
-import spock.lang.Unroll
 
 class EntityRipperTest extends Specification {
 
-    @Unroll
     def "Should detect if object has specified @Id annotated field"() {
         expect:
         new EntityRipper<>().getEntityId(object) == expectedResult
@@ -21,7 +19,6 @@ class EntityRipperTest extends Specification {
         new NoGettersAndSettersEntity(123)  | Optional.of(123)
     }
 
-    @Unroll
     def "Should set value to @Id annotated field"() {
         when:
         new EntityRipper<>().setEntityId(entity, newId)
@@ -44,4 +41,5 @@ class EntityRipperTest extends Specification {
         then:
         thrown InMemoryRepositoryException
     }
+
 }

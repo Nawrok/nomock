@@ -1,30 +1,31 @@
 package pl.potat0x.nomock.inmemoryrepository.reflection;
 
+import org.springframework.util.ReflectionUtils;
 import pl.potat0x.nomock.inmemoryrepository.InMemoryRepositoryException;
 
+import javax.persistence.Id;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 public final class EntityRipper<T, ID> {
 
     public void setEntityId(T entity, ID id) {
-        getFieldAnnotatedAsId(entity)
-                .ifPresentOrElse(field -> setFieldValue(entity, field, id),
-                        () -> {
-                            throw new InMemoryRepositoryException("@Id field not found");
-                        });
+        Field field = getFieldAnnotatedAsId(entity)
+                .orElseThrow(() -> new InMemoryRepositoryException("@Id field not found"));
+        ReflectionUtils.setField(field, entity, id);
     }
 
+    @SuppressWarnings("unchecked")
     public Optional<ID> getEntityId(T entity) {
         return getFieldAnnotatedAsId(entity)
-                .map(field -> (ID) getFieldValue(entity, field));
+                .map(field -> (ID) ReflectionUtils.getField(field, entity));
     }
 
     static Object getFieldValue(Object object, String fieldName) {
         try {
             Field field = object.getClass().getDeclaredField(fieldName);
-            return getFieldValue(object, field);
+            return ReflectionUtils.getField(getAccessibleField(field), object);
         } catch (Exception e) {
             throw new InMemoryRepositoryException(e);
         }
@@ -39,38 +40,15 @@ public final class EntityRipper<T, ID> {
     }
 
     private Optional<Field> getFieldAnnotatedAsId(Object entity) {
-        for (Field field : entity.getClass().getDeclaredFields()) {
-            if (field.isAnnotationPresent(javax.persistence.Id.class)) {
-                return Optional.of(field);
-            }
-        }
-        return Optional.empty();
+        return Arrays.stream(entity.getClass().getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .map(EntityRipper::getAccessibleField)
+                .findFirst();
     }
 
-    private static Object getFieldValue(Object object, Field field) {
-        try {
-            return performActionOnSecuredFieldAndGetResult(object, field, () -> field.get(object));
-        } catch (Exception e) {
-            throw new InMemoryRepositoryException(e);
-        }
-    }
-
-    private static void setFieldValue(Object object, Field field, Object value) {
-        try {
-            performActionOnSecuredFieldAndGetResult(object, field, () -> {
-                field.set(object, value);
-                return field.get(object);
-            });
-        } catch (Exception e) {
-            throw new InMemoryRepositoryException(e);
-        }
-    }
-
-    private static Object performActionOnSecuredFieldAndGetResult(Object object, Field field, Callable<?> action) throws Exception {
-        final boolean fieldAccessibility = field.canAccess(object);
+    private static Field getAccessibleField(Field field) {
         field.setAccessible(true);
-        Object fieldValue = action.call();
-        field.setAccessible(fieldAccessibility);
-        return fieldValue;
+        return field;
     }
+
 }

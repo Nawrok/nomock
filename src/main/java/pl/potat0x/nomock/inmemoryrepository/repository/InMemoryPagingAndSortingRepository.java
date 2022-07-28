@@ -5,16 +5,16 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.util.Streamable;
 import pl.potat0x.nomock.inmemoryrepository.reflection.ReflectiveComparator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-public class InMemoryPagingAndSortingRepository<T, ID> extends InMemoryCrudRepository<T, ID> implements PagingAndSortingRepository<T, ID> {
+public class InMemoryPagingAndSortingRepository<T, ID> extends InMemoryCrudRepository<T, ID>
+        implements PagingAndSortingRepository<T, ID> {
 
     public InMemoryPagingAndSortingRepository(Supplier<ID> idSupplier) {
         super(idSupplier);
@@ -26,25 +26,24 @@ public class InMemoryPagingAndSortingRepository<T, ID> extends InMemoryCrudRepos
 
     @Override
     public Iterable<T> findAll(Sort sort) {
-        List<T> entities = iterableToList(findAll());
-        sortEntities(sort, entities);
-        return entities;
+        List<T> list = Streamable.of(findAll()).toList();
+        return sortedList(sort, list);
     }
 
     @Override
     public Page<T> findAll(Pageable pageable) {
-        List<T> entities = iterableToList(findAll());
-        sortEntities(pageable.getSort(), entities);
-        return getPage(pageable, entities);
+        Sort sort = pageable.getSort();
+        List<T> list = Streamable.of(findAll(sort)).toList();
+        return page(pageable, list);
     }
 
-    private void sortEntities(Sort sort, List<T> entities) {
-        List<Sort.Order> orders = sort.stream()
-                .collect(Collectors.toList());
-        entities.sort((o1, o2) -> ReflectiveComparator.compareObjectsByMultipleFields(o1, o2, orders));
+    private List<T> sortedList(Sort sort, List<T> list) {
+        List<T> sortedList = new ArrayList<>(list);
+        sortedList.sort((o1, o2) -> ReflectiveComparator.compareObjectsByMultipleFields(o1, o2, sort.toList()));
+        return sortedList;
     }
 
-    private Page<T> getPage(Pageable pageable, List<T> items) {
+    private Page<T> page(Pageable pageable, List<T> items) {
         if (pageable.isUnpaged()) {
             return new PageImpl<>(items);
         }
@@ -53,23 +52,18 @@ public class InMemoryPagingAndSortingRepository<T, ID> extends InMemoryCrudRepos
         if (pageStart > items.size()) {
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
+        final int pageEnd = getPageEnd(pageable.getPageSize(), items.size(), pageStart);
 
-        int pageEnd = getPageEnd(pageable.getPageSize(), items.size(), pageStart);
-
-        List<T> entitiesInPage = items.subList(pageStart, pageEnd);
-        return new PageImpl<>(entitiesInPage, pageable, entitiesInPage.size());
-    }
-
-    private int getPageEnd(int pageSize, int numberOfAllEntities, int pageStart) {
-        return numberOfAllEntities - pageStart < pageSize ? numberOfAllEntities : pageStart + pageSize;
+        List<T> elementsInPage = items.subList(pageStart, pageEnd);
+        return new PageImpl<>(elementsInPage, pageable, elementsInPage.size());
     }
 
     private int getPageStart(Pageable pageable) {
         return pageable.getPageNumber() * pageable.getPageSize();
     }
 
-    protected static <T> List<T> iterableToList(Iterable<T> iterable) {
-        return StreamSupport.stream(iterable.spliterator(), false)
-                .collect(Collectors.toList());
+    private int getPageEnd(int pageSize, int totalElements, int pageStart) {
+        return Math.min(totalElements, pageStart + pageSize);
     }
+
 }

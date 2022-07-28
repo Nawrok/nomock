@@ -1,6 +1,7 @@
 package pl.potat0x.nomock.inmemoryrepository.reflection;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.NullHandling;
 import pl.potat0x.nomock.inmemoryrepository.InMemoryRepositoryException;
 
 import java.util.List;
@@ -9,6 +10,8 @@ import static pl.potat0x.nomock.inmemoryrepository.reflection.EntityRipper.check
 import static pl.potat0x.nomock.inmemoryrepository.reflection.EntityRipper.getFieldValue;
 
 public final class ReflectiveComparator {
+    private ReflectiveComparator() {
+    }
 
     public static int compareObjectsByMultipleFields(Object object1, Object object2, List<Sort.Order> orders) {
         int cmp = 0;
@@ -17,7 +20,6 @@ public final class ReflectiveComparator {
             Object obj2Field = getFieldValue(object2, order.getProperty());
 
             if (obj1Field == null && obj2Field == null) {
-                cmp = 0;
                 continue;
             } else if (obj1Field == null || obj2Field == null) {
                 return compareFieldsIfOneIsNull(order, obj1Field, obj2Field);
@@ -48,6 +50,7 @@ public final class ReflectiveComparator {
         return cmp * nullOrdering;
     }
 
+    @SuppressWarnings("unchecked")
     private static int compareNonNullFields(Sort.Order order, Object obj1Field, Object obj2Field, boolean comparedObjectsAreStringType) {
         assertNotNull(obj1Field, obj2Field);
 
@@ -60,20 +63,17 @@ public final class ReflectiveComparator {
             }
         } else {
             if (order.isAscending()) {
-                cmp = ((Comparable) obj1Field).compareTo(obj2Field);
+                cmp = ((Comparable<Object>) obj1Field).compareTo(obj2Field);
             } else {
-                cmp = ((Comparable) obj2Field).compareTo(obj1Field);
+                cmp = ((Comparable<Object>) obj2Field).compareTo(obj1Field);
             }
         }
         return cmp;
     }
 
     private static int getNullOrdering(Sort.Order order) {
-        if (order.isAscending()) {
-            return order.getNullHandling() == Sort.NullHandling.NULLS_LAST ? -1 : 1;
-        } else {
-            return order.getNullHandling() == Sort.NullHandling.NULLS_FIRST ? -1 : 1;
-        }
+        NullHandling nullHandling = order.isAscending() ? NullHandling.NULLS_LAST : NullHandling.NULLS_FIRST;
+        return order.getNullHandling() == nullHandling ? -1 : 1;
     }
 
     private static void assertNotNull(Object object1, Object object2) {

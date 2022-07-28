@@ -5,11 +5,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.potat0x.nomock.inmemoryrepository.InMemoryRepositoryException;
+import org.springframework.data.repository.query.FluentQuery.FetchableFluentQuery;
+import org.springframework.data.util.Streamable;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -25,22 +27,22 @@ public class InMemoryJpaRepository<T, ID> extends InMemoryPagingAndSortingReposi
 
     @Override
     public List<T> findAll() {
-        return iterableToList(super.findAll());
+        return Streamable.of(super.findAll()).toList();
     }
 
     @Override
     public List<T> findAll(Sort sort) {
-        return iterableToList(super.findAll(sort));
+        return Streamable.of(super.findAll(sort)).toList();
     }
 
     @Override
     public List<T> findAllById(Iterable<ID> ids) {
-        return iterableToList(super.findAllById(ids));
+        return Streamable.of(super.findAllById(ids)).toList();
     }
 
     @Override
     public <S extends T> List<S> saveAll(Iterable<S> entities) {
-        return iterableToList(super.saveAll(entities));
+        return Streamable.of(super.saveAll(entities)).toList();
     }
 
     @Override
@@ -54,8 +56,18 @@ public class InMemoryJpaRepository<T, ID> extends InMemoryPagingAndSortingReposi
     }
 
     @Override
-    public void deleteInBatch(Iterable<T> entities) {
+    public <S extends T> List<S> saveAllAndFlush(Iterable<S> entities) {
+        return Streamable.of(super.saveAll(entities)).toList();
+    }
+
+    @Override
+    public void deleteAllInBatch(Iterable<T> entities) {
         deleteAll(entities);
+    }
+
+    @Override
+    public void deleteAllByIdInBatch(Iterable<ID> ids) {
+        deleteAllById(ids);
     }
 
     @Override
@@ -65,42 +77,52 @@ public class InMemoryJpaRepository<T, ID> extends InMemoryPagingAndSortingReposi
 
     @Override
     public T getOne(ID id) {
-        return findById(id).orElseThrow(() -> {
-            throw new EntityNotFoundException("entity with id=" + id + " not found");
-        });
+        return getReferenceById(id);
+    }
+
+    @Override
+    public T getById(ID id) {
+        return getReferenceById(id);
+    }
+
+    @Override
+    public T getReferenceById(ID id) {
+        return findById(id).orElseThrow(() -> new EntityNotFoundException("entity with id=" + id + " not found"));
     }
 
     @Override
     public <S extends T> Optional<S> findOne(Example<S> example) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <S extends T> List<S> findAll(Example<S> example) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <S extends T> List<S> findAll(Example<S> example, Sort sort) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <S extends T> Page<S> findAll(Example<S> example, Pageable pageable) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <S extends T> long count(Example<S> example) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <S extends T> boolean exists(Example<S> example) {
-        throw examplesAreNotSupported();
+        throw new UnsupportedOperationException();
     }
 
-    private InMemoryRepositoryException examplesAreNotSupported() {
-        return new InMemoryRepositoryException("Query by Example API is not supported");
+    @Override
+    public <S extends T, R> R findBy(Example<S> example, Function<FetchableFluentQuery<S>, R> queryFunction) {
+        throw new UnsupportedOperationException();
     }
+
 }

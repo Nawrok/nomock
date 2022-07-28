@@ -1,26 +1,26 @@
 package pl.potat0x.nomock.inmemoryrepository.repository;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 final class IdGenerator<ID> {
 
-    private ID nextId;
+    private final AtomicReference<ID> nextId;
     private final UnaryOperator<ID> generator;
 
     IdGenerator(ID startId, UnaryOperator<ID> generator) {
-        this.nextId = startId;
+        this.nextId = new AtomicReference<>(startId);
         this.generator = generator;
     }
 
     IdGenerator(Supplier<ID> generator) {
-        this.nextId = generator.get();
+        this.nextId = new AtomicReference<>(generator.get());
         this.generator = id -> generator.get();
     }
 
     ID nextId() {
-        ID id = nextId;
-        nextId = generator.apply(nextId);
-        return id;
+        return nextId.getAndUpdate(generator);
     }
+
 }

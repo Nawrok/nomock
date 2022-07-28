@@ -2,6 +2,7 @@ package pl.potat0x.nomock.inmemoryrepository.repository;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.util.Streamable;
 import pl.potat0x.nomock.inmemoryrepository.reflection.EntityRipper;
 
 import java.util.LinkedHashMap;
@@ -9,9 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
 
@@ -30,20 +28,17 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
     @Override
     public <S extends T> S save(S entity) {
         assertEntityNotNull(entity);
-        entityRipper.getEntityId(entity)
-                .ifPresentOrElse(
-                        currentId -> repository.put(currentId, entity),
-                        () -> repository.put(assignIdToEntity(entity), entity)
-                );
+        ID id = entityRipper.getEntityId(entity).orElseGet(() -> assignIdToEntity(entity));
+        repository.put(id, entity);
         return entity;
     }
 
     @Override
     public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
         assertEntitiesNotNull(entities);
-        return iterableToStream(entities)
+        return Streamable.of(entities)
                 .map(this::save)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -66,11 +61,11 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
     @Override
     public Iterable<T> findAllById(Iterable<ID> ids) {
         assertIdsNotNull(ids);
-        return iterableToStream(ids)
+        return Streamable.of(ids)
                 .map(this::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -81,9 +76,7 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
     @Override
     public void deleteById(ID id) {
         assertIdNotNull(id);
-        if (repository.containsKey(id)) {
-            repository.remove(id);
-        } else {
+        if (repository.remove(id) == null) {
             throw new EmptyResultDataAccessException(String.format("no entity with id %s exists!", id), 1);
         }
     }
@@ -91,8 +84,13 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
     @Override
     public void delete(T entity) {
         assertEntityNotNull(entity);
-        entityRipper.getEntityId(entity)
-                .ifPresent(repository::remove);
+        entityRipper.getEntityId(entity).ifPresent(repository::remove);
+    }
+
+    @Override
+    public void deleteAllById(Iterable<? extends ID> ids) {
+        assertIdsNotNull(ids);
+        ids.forEach(this::deleteById);
     }
 
     @Override
@@ -112,11 +110,11 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
         return id;
     }
 
-    private void assertIdNotNull(ID id) {
+    private <S extends ID> void assertIdNotNull(S id) {
         assertNotNull(id, "id must not be null");
     }
 
-    private void assertIdsNotNull(Iterable<ID> ids) {
+    private <S extends ID> void assertIdsNotNull(Iterable<S> ids) {
         if (ids == null) {
             throw new IllegalArgumentException("ids must not be null");
         }
@@ -140,7 +138,4 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
         }
     }
 
-    private static <T> Stream<T> iterableToStream(Iterable<T> iterable) {
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
 }
