@@ -2,13 +2,17 @@ package com.github.potat0x.nomock
 
 import com.github.potat0x.nomock.examples.bookapp.BookEntity
 import com.github.potat0x.nomock.examples.repositories.NoGettersAndSettersEntity
+import spock.lang.Shared
 import spock.lang.Specification
 
 class EntityRipperTest extends Specification {
 
+    @Shared
+    def entityRipper = new EntityRipper<>()
+
     def "Should detect if object has specified @Id annotated field"() {
         expect:
-            new EntityRipper<>().getEntityId(object) == expectedResult
+            entityRipper.getEntityId(object) == expectedResult
 
         where:
             object                              | expectedResult
@@ -21,7 +25,7 @@ class EntityRipperTest extends Specification {
 
     def "Should set value to @Id annotated field"() {
         when:
-            new EntityRipper<>().setEntityId(entity, newId)
+            entityRipper.setEntityId(entity, newId)
 
         then:
             entity == expectedEntity
@@ -36,7 +40,7 @@ class EntityRipperTest extends Specification {
 
     def "Should throw custom exception while attempting to assign id to object with no @Id annotated field"() {
         when:
-            new EntityRipper<>().setEntityId("this is not entity", 123L)
+            entityRipper.setEntityId("this is not entity", 123L)
 
         then:
             thrown InMemoryRepositoryException

@@ -9,18 +9,12 @@ import org.springframework.data.util.Streamable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 public class InMemoryPagingAndSortingRepository<T, ID> extends InMemoryCrudRepository<T, ID>
         implements PagingAndSortingRepository<T, ID> {
 
-    public InMemoryPagingAndSortingRepository(Supplier<ID> idSupplier) {
-        super(idSupplier);
-    }
-
-    public InMemoryPagingAndSortingRepository(ID initialId, UnaryOperator<ID> idSuccessorFunction) {
-        super(initialId, idSuccessorFunction);
+    public InMemoryPagingAndSortingRepository(IdGenerator<ID> idGenerator) {
+        super(idGenerator);
     }
 
     @Override

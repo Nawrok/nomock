@@ -21,8 +21,8 @@ final class ReflectiveComparator {
                 return compareFieldsIfOneIsNull(order, obj1Field, obj2Field);
             }
 
-            cmp = compareNonNullFields(order, obj1Field, obj2Field,
-                    EntityRipper.checkIfFieldIsString(object2, order.getProperty()));
+            boolean isFieldString = EntityRipper.checkIfFieldIsString(object2, order.getProperty());
+            cmp = compareNonNullFields(order, obj1Field, obj2Field, isFieldString);
 
             if (cmp != 0) {
                 return cmp;

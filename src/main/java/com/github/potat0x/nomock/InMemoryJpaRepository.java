@@ -12,18 +12,12 @@ import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 public class InMemoryJpaRepository<T, ID> extends InMemoryPagingAndSortingRepository<T, ID>
         implements JpaRepository<T, ID> {
 
-    public InMemoryJpaRepository(Supplier<ID> idSupplier) {
-        super(idSupplier);
-    }
-
-    public InMemoryJpaRepository(ID initialId, UnaryOperator<ID> idSuccessorFunction) {
-        super(initialId, idSuccessorFunction);
+    public InMemoryJpaRepository(IdGenerator<ID> idGenerator) {
+        super(idGenerator);
     }
 
     @Override

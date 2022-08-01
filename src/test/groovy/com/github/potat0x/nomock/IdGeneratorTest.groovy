@@ -1,25 +1,25 @@
 package com.github.potat0x.nomock
 
-
-import org.mockito.internal.util.collections.Sets
 import spock.lang.Specification
 
 class IdGeneratorTest extends Specification {
-    def "Should generate Integer identifiers via successor function"() {
+
+    def "Should generate Long identifiers"() {
         given:
-            IdGenerator<Integer> idGenerator = new IdGenerator<>(100, { id -> id + 20 })
+            def idGenerator = IdGenerators.longGenerator()
 
         expect:
-            idGenerator.nextId() == 100
-            idGenerator.nextId() == 120
-            idGenerator.nextId() == 140
+            idGenerator.nextId() == 1L
+            idGenerator.nextId() == 2L
+            idGenerator.nextId() == 3L
     }
 
-    def "Should generate UUID identifiers via supplier"() {
+    def "Should generate UUID identifiers"() {
         given:
-            IdGenerator<UUID> idGenerator = new IdGenerator<>({ -> UUID.randomUUID() })
+            def idGenerator = IdGenerators.uuidGenerator()
 
         expect:
-            Sets.newSet(idGenerator.nextId(), idGenerator.nextId(), idGenerator.nextId()).size() == 3
+            [idGenerator.nextId(), idGenerator.nextId(), idGenerator.nextId()].size() == 3
     }
+
 }

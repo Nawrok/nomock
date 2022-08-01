@@ -7,8 +7,6 @@ import org.springframework.data.util.Streamable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
 
@@ -16,12 +14,8 @@ public class InMemoryCrudRepository<T, ID> implements CrudRepository<T, ID> {
     private final EntityRipper<T, ID> entityRipper = new EntityRipper<>();
     private final IdGenerator<ID> idGenerator;
 
-    public InMemoryCrudRepository(Supplier<ID> idSupplier) {
-        this.idGenerator = new IdGenerator<>(idSupplier);
-    }
-
-    public InMemoryCrudRepository(ID initialId, UnaryOperator<ID> idSuccessorFunction) {
-        this.idGenerator = new IdGenerator<>(initialId, idSuccessorFunction);
+    public InMemoryCrudRepository(IdGenerator<ID> idGenerator) {
+        this.idGenerator = idGenerator;
     }
 
     @Override
